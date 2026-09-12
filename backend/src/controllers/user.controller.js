@@ -11,6 +11,11 @@ const registerUser = async (req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }   
 
+        // Check password length (matches schema minlength: 8)
+        if (password.length < 8) {
+            return res.status(400).json({ message: "Password must be at least 8 characters long" });
+        }
+
         // Check if user already exists (by username or email)
         const existingUser = await User.findOne({
             $or: [{ username }, { email }]
@@ -28,15 +33,79 @@ const registerUser = async (req, res) => {
             loggedIn: false,
         });
 
-        // Return success response (without password)
-        res.status(200).json({
+        // Return success response (without password) - 201 Created
+        res.status(201).json({
             message: "User registered successfully",
             user: { id: user._id, email: user.email, username: user.username }
         });
     } catch (error) {
         console.error("Registration error:", error);
+
+        // Handle Mongoose validation errors as 400 instead of 500
+        if (error.name === "ValidationError") {
+            return res.status(400).json({ message: error.message });
+        }
+
         res.status(500).json({ message: "Internal server error" });
     }
 };
+const loginUser = async (req,res) => {
+    try {
+        const {username,email,password} = req.body;
+        const user = await User.findOne({ 
+            email: email.toLowerCase(),
+          });
+          if(!user){
+            return res.status(400).json({ message: "User not found" });
+        
+          }
+        const isMatch = await user.comparePassword(password);
+        if(!isMatch){
+            return res.status(400).json({ message: "Invalid password" });
+        }
+        user.loggedIn = true;
+        await user.save();
+        res.status(200).json({ message: "User logged in successfully", 
+            user : {
+                 id: user._id, 
+                 email: user.email, 
+                 username: user.username 
+             }
+         });
+     } catch (error) {
+         console.error("Login error:", error);
+         res.status(500).json({ message: "Internal server error" });
+     }
+ } 
 
-export { registerUser };
+ const logoutUser = async (req,res) => {
+    try {
+        const { username, email } = req.body;
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+        const user = await User.findOne({ 
+            email: email.toLowerCase(),
+        });
+        if (!user) {
+            return res.status(400).json({ message: "User not found" });
+        }
+        user.loggedIn = false;
+        await user.save();
+        res.status(200).json({ message: "User logged out successfully", 
+            user : {
+                 id: user._id, 
+                 email: user.email, 
+                 username: user.username 
+             }
+         });
+     } catch (error) {
+         console.error("Logout error:", error);
+         res.status(500).json({ message: "Internal server error" });
+     }
+ } 
+
+export { registerUser ,
+        loginUser,
+        logoutUser,
+};

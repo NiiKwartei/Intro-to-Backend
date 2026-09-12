@@ -14,5 +14,9 @@ app.use("/api/v1/users", userRouter);
 // app.use("/api/v1/posts", postRouter); // Example: uncomment once postRouter is created
 
 // Example endpoint: http://localhost:4000/api/v1/users/register
+//Example endpoint: http://localhost:4000/api/v1/users/login
+//Example endpoint: http://localhost:4000/api/v1/users/logout
+
+
 
 export default app; 
